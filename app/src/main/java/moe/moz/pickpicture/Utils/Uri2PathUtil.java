@@ -1,4 +1,4 @@
-package moe.moz.pickpicture;
+package moe.moz.pickpicture.Utils;
 
 import android.annotation.TargetApi;
 import android.content.ContentUris;

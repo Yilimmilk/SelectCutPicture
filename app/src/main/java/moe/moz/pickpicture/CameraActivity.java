@@ -2,20 +2,15 @@ package moe.moz.pickpicture;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-
 import hei.permission.EasyPermissions;
 import hei.permission.PermissionActivity;
+import moe.moz.pickpicture.Utils.FileUtil;
 
 /**
  * @author Yili(yili)

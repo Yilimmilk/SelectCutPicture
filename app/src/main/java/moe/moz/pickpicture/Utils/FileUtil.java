@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2017 Baidu, Inc. All Rights Reserved.
  */
-package moe.moz.pickpicture;
+package moe.moz.pickpicture.Utils;
 
 import android.content.Context;
 

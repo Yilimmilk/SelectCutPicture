@@ -1,28 +1,43 @@
 package moe.moz.pickpicture;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
+import android.provider.Telephony.Mms;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.Button;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
 import hei.permission.PermissionActivity;
+import moe.moz.pickpicture.CustomView.MyWebChromeClient;
+import moe.moz.pickpicture.CustomView.MyWebView;
+import moe.moz.pickpicture.Utils.SqlHelperUtil;
 
 /**
  * @author Yili(yili)
@@ -30,14 +45,20 @@ import hei.permission.PermissionActivity;
  * @package moe.moz.pickpicture
  * @date 2020-03-20
  */
-public class MainActivity extends PermissionActivity implements OnClickListener {
+public class MainActivity extends PermissionActivity {
 
-    private String webUrl = "file:////android_asset/index.html";
-    private String webOpenSourceUrl = "";
+    private String webOpenSourceUrl = "https://github.com/Yilimmilk/SelectCutPicture";
     private String webMyPageUrl = "https://moz.moe";
-    private WebView wvNote;
-    private Button btTest,btCut;
-    private ProgressBar pgbLoad;
+    private String descTitle = "";
+    private Toolbar toolbar;
+    private SharedPreferences sp;
+    private Editor editor;
+    private TextView tvDescTitle;
+    private WebView webView;
+    private ValueCallback<Uri> uploadFile;
+    private ValueCallback<Uri[]> uploadFiles;
+
+    private SqlHelperUtil serverlink = new SqlHelperUtil("mc.moz.moe", "app_pickpicture", "app_pickpicture", "333333");
 
     private static String TAG = "MainActivity";
 
@@ -45,57 +66,182 @@ public class MainActivity extends PermissionActivity implements OnClickListener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle("截取图片");
         setSupportActionBar(toolbar);
         requestPermissions();
-        initview();
-        webViewAbout();
-    }
+        tvDescTitle = findViewById(R.id.tv_desc_title);
+        View testView = View.inflate(MainActivity.this, R.layout.dialog_webview, null);
+        webView = testView.findViewById(R.id.wv_dialog_main);
 
-    //初始化控件
-    private void initview(){
-        wvNote = findViewById(R.id.wv_note);
-        btTest = findViewById(R.id.bt_test);
-        btCut = findViewById(R.id.bt_cut);
-        pgbLoad = findViewById(R.id.pgb_webload);
+        sp = getSharedPreferences("data", MODE_PRIVATE);
+        editor = sp.edit();
 
-        btTest.setOnClickListener(this);
-        btCut.setOnClickListener(this);
-    }
+        descTitle = sp.getString("title_database",getResources().getString(R.string.text_desc_title));
 
-    //webview相关代码
-    private void webViewAbout(){
-        //如果不设置WebViewClient，请求会跳转系统浏览器
-        wvNote.setWebViewClient(new WebViewClient() {
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return false;
+            public void onClick(View view) {
+                AlertDialog alertDialogSearch = new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("试试？")
+                        .setView(testView)
+                        .setCancelable(true)
+                        .setPositiveButton("结束", null)
+                        .create();
+                initWebView();
+                webView.loadUrl("file:///android_asset/index.html");
+                alertDialogSearch.show();
             }
         });
-        //设置WebView进度条
-        wvNote.setWebChromeClient(new WebChromeClient() {
+
+
+
+        //开启一个线程用于读取数据库，控制文本
+        Thread thread = new Thread(new Runnable() {
             @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                //显示进度条
-                pgbLoad.setProgress(newProgress);
-                if (newProgress == 100) {
-                    //加载完毕隐藏进度条
-                    pgbLoad.setVisibility(View.GONE);
-                } else {
-                    pgbLoad.setVisibility(View.VISIBLE);
-                    pgbLoad.setProgress(newProgress);
+            public void run() {
+                // TODO Auto-generated method stub
+                // 通过Message类来传递结果值，先实例化
+                String jsonResult = SelectDbNote();
+                Message msg = new Message();
+                // 下面分别是增删改查方法
+                msg.obj = jsonResult;
+                // 执行完以后，把msg传到handler，并且触发handler的响应方法
+                handler.sendMessage(msg);
+            }
+        });
+        // 进程开始，这行代码不要忘记
+        thread.start();
+    }
+
+    //Sql选择语句
+    public String SelectDbNote() {
+        String sql = "SELECT * FROM `info`";
+        String jsonResult;
+        try {
+            // serverlink.ExecuteQuery()，参数1：查询语句，参数2：查询用到的变量，用于本案例不需要参数，所以用空白的new
+            // ArrayList<Object>()
+            jsonResult = serverlink.ExecuteQuery(sql, new ArrayList<Object>());
+        } catch (Exception e) {
+            // TODO: handle exception
+            System.out.println(e.getMessage());
+            return null;
+        }
+        return jsonResult;
+    }
+
+    //handler传递数据
+    @SuppressLint("HandlerLeak")
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            // 调用super的方法，传入handler对象接收到的msg对象
+            //super.handleMessage(msg);
+            String jsonResult = (String) msg.obj;
+            System.out.println(jsonResult);
+            // 控制台输出，用于监视，与实际使用无关
+            try {
+                //下边是解析json
+                JSONArray jsonArray = new JSONArray(jsonResult);
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject object2 = jsonArray.getJSONObject(i);
+                    String title = object2.getString("title");
+
+                    editor.putString("title_database",title);
+                    editor.commit();
+                    if (title != null && !TextUtils.isEmpty(title)) {
+                        descTitle = title;
+                        tvDescTitle.setText(title);
+                    }else {
+                        descTitle = getResources().getString(R.string.text_desc_title);
+                    }
                 }
-                super.onProgressChanged(view, newProgress);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
-        WebSettings settings = wvNote.getSettings();
+            // log提示
+            Log.d("调试","连接服务器正常");
+        }
+    };
+
+    //初始化webview
+    private void initWebView() {
+        WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
-        settings.setAllowFileAccess(true); //设置可以访问文件
-        settings.setJavaScriptCanOpenWindowsAutomatically(true); //支持通过JS打开新窗口
-        settings.setLoadsImagesAutomatically(true); //支持自动加载图片
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
-        wvNote.loadUrl(webUrl);
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            // For Android 3.0+
+            public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType) {
+                Log.i("test", "openFileChooser 1");
+                MainActivity.this.uploadFile = uploadMsg;
+                openFileChooseProcess();
+            }
+
+            // For Android < 3.0
+            public void openFileChooser(ValueCallback<Uri> uploadMsgs) {
+                Log.i("test", "openFileChooser 2");
+                MainActivity.this.uploadFile = uploadMsgs;
+                openFileChooseProcess();
+            }
+
+            // For Android  > 4.1.1
+            public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
+                Log.i("test", "openFileChooser 3");
+                MainActivity.this.uploadFile = uploadMsg;
+                openFileChooseProcess();
+            }
+
+            // For Android  >= 5.0
+            @Override
+            public boolean onShowFileChooser(WebView webView,
+                                             ValueCallback<Uri[]> filePathCallback,
+                                             WebChromeClient.FileChooserParams fileChooserParams) {
+                Log.i("test", "openFileChooser 4:" + filePathCallback.toString());
+                MainActivity.this.uploadFiles = filePathCallback;
+                openFileChooseProcess();
+                return true;
+            }
+
+        });
+    }
+
+    private void openFileChooseProcess() {
+//        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+//        i.addCategory(Intent.CATEGORY_OPENABLE);
+//        i.setType("*/*");
+//        startActivityForResult(Intent.createChooser(i, "上传文件"), 0);
+        Intent i = new Intent("android.media.action.IMAGE_CAPTURE");
+        i.addCategory("android.intent.category.DEFAULT");
+        startActivityForResult(Intent.createChooser(i, "上传文件"),0);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 0) {
+            if (resultCode == RESULT_OK) {
+                if (null != uploadFile) {
+                    Uri result = data == null ? null
+                            : data.getData();
+                    uploadFile.onReceiveValue(result);
+                    uploadFile = null;
+                }
+                if (null != uploadFiles) {
+                    Uri result = data == null ? null
+                            : data.getData();
+                    uploadFiles.onReceiveValue(new Uri[]{result});
+                    uploadFiles = null;
+                }
+            } else if (resultCode == RESULT_CANCELED) {
+                if (null != uploadFile) {
+                    uploadFile.onReceiveValue(null);
+                    uploadFile = null;
+                }
+            }
+        }
     }
 
     //请求相关权限
@@ -113,32 +259,20 @@ public class MainActivity extends PermissionActivity implements OnClickListener 
     }
 
     @Override
-    public void onClick(View v) {
-        switch (v.getId()){
-            case R.id.bt_test:
-                Intent intent=new Intent();
-                // 指定开启系统相机的Action
-                intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
-                intent.addCategory(Intent.CATEGORY_DEFAULT);
-                startActivityForResult(intent, 0);
-                break;
-            case R.id.bt_cut:
-                //TODO 开始裁剪按钮
-                break;
-            default:
-                break;
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-    }
-
-    @Override
     public void onBackPressed() {
         finish();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        webView.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        webView.onPause();
     }
 
     @Override
@@ -152,21 +286,15 @@ public class MainActivity extends PermissionActivity implements OnClickListener 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        //清理缓存
-        if (id == R.id.action_clear) {
-            wvNote.clearCache(true);
-        }
         //开源相关
         if (id == R.id.action_opensource) {
-            wvNote.loadUrl("");
+            Uri uri = Uri.parse(webOpenSourceUrl);
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            startActivity(intent);
         }
         //关于
         if (id == R.id.action_about) {
-            //将dialog_change_layout渲染成view对象
             View aboutView = View.inflate(MainActivity.this, R.layout.dialog_about, null);
-            //记一个坑，一定要用对应布局的view去findviewbyid
-            TextView tvDiaNote = aboutView.findViewById(R.id.tv_dia_note);
-            //构建弹窗并检查数据合法性
             AlertDialog alertDialogSearch = new AlertDialog.Builder(MainActivity.this)
                     .setTitle("关于")
                     .setView(aboutView)

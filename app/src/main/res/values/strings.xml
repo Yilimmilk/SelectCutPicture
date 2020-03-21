@@ -12,4 +12,12 @@
     <string name="action_clear">清理缓存</string>
     <string name="action_opensource">开源相关</string>
     <string name="action_about">关于</string>
+    <string name="text_desc_title">说明文档</string>
+    <string name="text_desc_1">这是一篇关于这个App使用方法的说明。</string>
+    <string name="text_desc_2">1.在页面中点击需要上传文件的地方，选择“截图”或类似的选项：</string>
+    <string name="text_desc_3">2.再选择“截取图片”：</string>
+    <string name="text_desc_4">3.在这个界面你可以拍照或选择相册里的图片，如下图：</string>
+    <string name="text_desc_5">3-1.如果你要从相册选择的话，请在类似下图这种界面选择图片：</string>
+    <string name="text_desc_6">4.在这里，你可以调整图片大小，如图：</string>
+    <string name="text_desc_7">5.这是最终的确定页面，若无误可以点击确定：</string>
 </resources>
