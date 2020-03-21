@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">截取图片</string>
+    <string name="app_version">版本:1.0.0</string>
+    <string name="app_author">Created By Yili</string>
+    <string name="app_info">一个快速截取图片的APP</string>
+    <string name="app_note">本项目仅供学习与参考</string>
+    <string name="button_test">测试选择</string>
+    <string name="button_cut">开始裁剪</string>
+    <string name="alias_select_picture">截取图片</string>
+    <string name="note">请允许相关权限，否则将无法正常使用</string>
+
+    <string name="action_clear">清理缓存</string>
+    <string name="action_opensource">开源相关</string>
+    <string name="action_about">关于</string>
+</resources>

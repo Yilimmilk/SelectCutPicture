@@ -1,0 +1,2 @@
+include ':app', ':permlib', ':camera_cut_ui'
+rootProject.name='截取图片'
