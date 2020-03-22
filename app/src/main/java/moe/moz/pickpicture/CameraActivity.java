@@ -35,7 +35,7 @@ public class CameraActivity extends PermissionActivity {
         Log.d(TAG,"打印outputMediaUri"+outputMediaUri);
         if (contentAction != null) {
             Intent cutIntent = new Intent(CameraActivity.this, com.baidu.ocr.ui.camera.CameraActivity.class);
-            String cameraPath = FileUtil.getSaveFile(getApplication()).getAbsolutePath();
+            String cameraPath = FileUtil.getSaveFileForCameraActivity(getApplication()).getAbsolutePath();
             Log.d(TAG,"将临时文件存储至:"+cameraPath);
             cutIntent.putExtra(com.baidu.ocr.ui.camera.CameraActivity.KEY_OUTPUT_FILE_PATH,
                     cameraPath);

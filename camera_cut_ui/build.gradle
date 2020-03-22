@@ -2,6 +2,8 @@
  * Copyright (C) 2017 Baidu, Inc. All Rights Reserved.
  */
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 25
@@ -31,6 +33,11 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.1.1'
     testCompile 'junit:junit:4.12'
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 //    compile project(path: ':ocrsdk')
+}
+repositories {
+    mavenCentral()
 }

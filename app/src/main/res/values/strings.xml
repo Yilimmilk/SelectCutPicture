@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">截取图片</string>
-    <string name="app_version">版本:1.0.0</string>
+    <string name="app_version">版本:xxx</string>
+    <string name="app_build_time">编译时间:xxx</string>
     <string name="app_author">Created By Yili</string>
     <string name="app_info">一个快速截取图片的APP</string>
     <string name="app_note">本项目仅供学习与参考</string>
@@ -8,6 +9,9 @@
     <string name="button_cut">开始裁剪</string>
     <string name="alias_select_picture">截取图片</string>
     <string name="note">请允许相关权限，否则将无法正常使用</string>
+    <string name="if_is_huawei">由于华为系统的安全设置，您可能需要手动设置默认应用\n\n步骤:\n默认应用设置&#8212;>相机&#8212;>截取图片</string>
+    <string name="if_is_oppo">由于Oppo系统的安全设置，您可能需要手动设置默认应用\n\n步骤:\n默认应用设置&#8212;>相机&#8212;>截取图片</string>
+    <string name="if_is_vivo">由于Vivo系统的安全设置，您可能需要手动设置默认应用\n\n步骤:\n默认应用设置&#8212;>相机&#8212;>截取图片</string>
 
     <string name="action_clear">清理缓存</string>
     <string name="action_opensource">开源相关</string>
